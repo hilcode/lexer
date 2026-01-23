@@ -1,0 +1,15 @@
+[package]
+name = "lexer"
+version = "0.1.0"
+edition = "2024"
+description = "A simple Lexer builder without magic."
+
+[dependencies]
+
+[lints.rust]
+non_snake_case = "allow"
+nonstandard_style = "allow"
+
+[lints.clippy]
+needless_arbitrary_self_type = "allow"
+needless_return = "allow"
