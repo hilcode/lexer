@@ -5,6 +5,9 @@ edition = "2024"
 description = "A simple Lexer builder without magic."
 
 [dependencies]
+bit-set       = { version = "0.8.0"                                  }
+imstr         = { version = "0.2.0"                                  }
+proptest      = { version = "1.9.0", features = [ "proptest-macro" ] }
 
 [lints.rust]
 non_snake_case = "allow"
