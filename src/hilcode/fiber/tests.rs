@@ -85,7 +85,7 @@ mod run {
 	fn test_02() {
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
-			.token_found(TokenFound::_builder().token(DummyToken::Best("...".into())).build())
+			.token_found(TokenFound::new(DummyToken::Best("...".into()), 0))
 			.build();
 		let fiber: Fiber = test_data.fiber;
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
@@ -126,7 +126,7 @@ mod run {
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.fiber(Fiber::default())
-			.token_found(TokenFound::_builder().token(DummyToken::default()).build())
+			.token_found(TokenFound::new(DummyToken::default(), 0))
 			.build();
 		let fiber: Fiber = test_data.fiber;
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
@@ -171,7 +171,7 @@ mod run {
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[0], "*", to_asterisk).build())
 			.fiber(Fiber::default())
-			.token_found(TokenFound::_builder().token(DummyToken::default()).build())
+			.token_found(TokenFound::new(DummyToken::default(), 0))
 			.build();
 		let fiber: Fiber = test_data.fiber;
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
@@ -195,7 +195,7 @@ mod run {
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[0, 100, 20], "*", to_asterisk).build())
 			.fiber(Fiber::default())
-			.token_found(TokenFound::_builder().token(DummyToken::Best("...".into())).build())
+			.token_found(TokenFound::new(DummyToken::Best("...".into()), 0))
 			.build();
 		let fiber: Fiber = test_data.fiber;
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
