@@ -15,8 +15,7 @@ fn gen_offset() -> impl Strategy<Value = usize> {
 }
 
 fn gen_fiber() -> impl Strategy<Value = Fiber> {
-	let strategy = (gen_position(), gen_offset());
-	Strategy::prop_map(strategy, move |(position, offset)| -> Fiber {
+	Strategy::prop_map((gen_position(), gen_offset()), move |(position, offset)| -> Fiber {
 		return Fiber::new(position, offset);
 	})
 }
@@ -58,6 +57,7 @@ mod run {
 	use crate::hilcode::fiber::tests::DummyToken;
 	use crate::hilcode::test_data::TestData;
 	use ::imstr::ImString;
+	use ::std::collections::BTreeSet;
 
 	/*
 	 * The LexerStep matches and has a token. No token has been found yet. The matching token should be the new token found.
@@ -67,12 +67,12 @@ mod run {
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("*"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"*".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 0);
 		let token_found: TokenFound<DummyToken> = TokenFound::new(DummyToken::Asterisk("*".into()), 1);
 		assert_eq!(test_data.token_found, Some(token_found));
@@ -87,12 +87,12 @@ mod run {
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.token_found(TokenFound::_builder().token(DummyToken::Best("...".into())).build())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("*"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"*".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, Some(TokenFound::new(DummyToken::Best("...".into()), 0)));
 	}
@@ -108,12 +108,12 @@ mod run {
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.fiber(Fiber::default())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("*"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"*".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, Some(TokenFound::new(DummyToken::Asterisk("*".into()), 1)));
 	}
@@ -128,12 +128,12 @@ mod run {
 			.fiber(Fiber::default())
 			.token_found(TokenFound::_builder().token(DummyToken::default()).build())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("..."),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"...".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, Some(TokenFound::new(DummyToken::default(), 0)));
 	}
@@ -149,12 +149,12 @@ mod run {
 			.lexer(Lexer::_builder().lexer_step_success(&[0, 5], "*", to_asterisk).build())
 			.fiber(Fiber::default())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("**"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"**".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 2);
 		assert!(test_data.active_fibers.contains(&Fiber::_builder().offset(1).build()));
 		assert!(test_data.active_fibers.contains(&Fiber::_builder().position(5).offset(1).build()));
@@ -173,12 +173,12 @@ mod run {
 			.fiber(Fiber::default())
 			.token_found(TokenFound::_builder().token(DummyToken::default()).build())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("**"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"**".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 1);
 		let expected_fiber: Fiber = Fiber::_builder().offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
@@ -197,12 +197,12 @@ mod run {
 			.fiber(Fiber::default())
 			.token_found(TokenFound::_builder().token(DummyToken::Best("...".into())).build())
 			.build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("**"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"**".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 3);
 		let expected_fiber: Fiber = Fiber::_builder().offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
@@ -219,12 +219,12 @@ mod run {
 	#[test]
 	fn test_08() {
 		let mut test_data: TestData<DummyToken> = TestData::_builder().lexer(Lexer::_builder().lexer_step(&[], "*").build()).build();
-		test_data.fiber.run(
-			&mut test_data.token_found,
-			&mut test_data.active_fibers,
-			&ImString::from("*"),
-			&test_data.lexer,
-		);
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"*".into();
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, None);
 	}

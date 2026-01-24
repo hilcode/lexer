@@ -34,18 +34,7 @@ impl Fiber {
 				let new_offset: usize = self.offset + matched_byte_count;
 				if let Some(token_builder) = lexer_step.get_token_builder(lexer) {
 					let token: TOKEN = token_builder(&source.slice(0..new_offset));
-					match token_found {
-						None => {
-							token_found.replace(TokenFound::new(token, new_offset));
-						}
-
-						Some(current_token_found) => {
-							let current_token: TOKEN = current_token_found.token();
-							if current_token < token {
-								token_found.replace(TokenFound::new(token, new_offset));
-							}
-						}
-					}
+					Fiber::update_token_found(token_found, token, new_offset);
 				}
 				lexer_step.next().for_each(|next_position: usize| {
 					let fiber: Fiber = Fiber::new(next_position, new_offset);
@@ -55,6 +44,27 @@ impl Fiber {
 
 			None => {
 				// Do nothing
+			}
+		}
+	}
+
+	fn update_token_found<TOKEN>(
+		token_found: &mut Option<TokenFound<TOKEN>>,
+		token: TOKEN,
+		new_offset: usize,
+	) where
+		TOKEN: TokenDefinition,
+	{
+		match token_found {
+			None => {
+				token_found.replace(TokenFound::new(token, new_offset));
+			}
+
+			Some(current_token_found) => {
+				let current_token: TOKEN = current_token_found.token();
+				if current_token < token {
+					token_found.replace(TokenFound::new(token, new_offset));
+				}
 			}
 		}
 	}
