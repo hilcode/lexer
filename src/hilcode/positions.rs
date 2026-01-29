@@ -1,3 +1,4 @@
+use crate::hilcode::id::Id;
 use ::bit_set::BitSet;
 use ::std::fmt::Debug;
 use ::std::marker::PhantomData;
@@ -67,20 +68,23 @@ impl<POS> Positions<POS> {
 
 	pub(crate) fn for_each<FUNCTION>(
 		self: &Self,
-		function: FUNCTION,
+		mut function: FUNCTION,
 	) where
-		FUNCTION: FnMut(usize),
+		FUNCTION: FnMut(Id),
 	{
-		self.0.iter().for_each(function);
+		self.0.iter().for_each(|id: usize| {
+			let id: Id = Id::new(id);
+			function(id)
+		});
 	}
 }
 
 impl<FirstPos> Positions<FirstPos> {
 	pub(crate) fn insert(
 		self: &mut Self,
-		id: usize,
+		id: Id,
 	) {
-		self.0.insert(id);
+		self.0.insert(id.0);
 	}
 
 	pub(crate) fn to_last_pos(self: &Self) -> Positions<LastPos> {

@@ -1,5 +1,6 @@
 pub(crate) mod dummy_token;
 pub(crate) mod fiber;
+pub(crate) mod id;
 pub(crate) mod id_flag;
 pub(crate) mod id_provider;
 pub(crate) mod lexer_builder;
@@ -15,6 +16,7 @@ pub(crate) mod token_found;
 pub(crate) mod token_id;
 
 use crate::hilcode::fiber::Fiber;
+use crate::hilcode::id::Id;
 use crate::hilcode::lexer_builder::LexerBuilderEmpty;
 use crate::hilcode::lexer_it::LexerIt;
 use crate::hilcode::lexer_step::LexerStep;
@@ -71,9 +73,9 @@ where
 
 	pub(crate) fn get_step(
 		self: &Self,
-		index: usize,
+		id: Id,
 	) -> &LexerStep {
-		unsafe { self.lexer_steps.get_unchecked(index) }
+		unsafe { self.lexer_steps.get_unchecked(id.0) }
 	}
 
 	pub fn tokenize<'lexer>(

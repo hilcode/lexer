@@ -1,5 +1,6 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::fiber::Fiber;
+use crate::hilcode::id::Id;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
 use crate::hilcode::token_definition::TokenDefinition;
@@ -62,7 +63,7 @@ where
 		}
 		let mut maybe_token_found: Option<TokenFound<TOKEN>> = None;
 		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
-		self.start_ids().for_each(|start_id: usize| {
+		self.start_ids().for_each(|start_id: Id| {
 			let fiber: Fiber = Fiber::new(start_id, 0);
 			active_fibers.insert(fiber);
 		});

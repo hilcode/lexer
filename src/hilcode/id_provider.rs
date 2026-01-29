@@ -1,13 +1,14 @@
+use crate::hilcode::id::Id;
 use crate::hilcode::lexer_step::LexerStep;
 use crate::hilcode::token_id::TokenId;
 use ::imstr::ImString;
 
 pub(crate) trait IdProvider {
-	fn get_next_id(self: &Self) -> usize;
+	fn get_next_id(self: &Self) -> Id;
 
 	fn get_lexer_step_mut(
 		self: &mut Self,
-		id: usize,
+		id: Id,
 	) -> &mut LexerStep;
 
 	fn to_lexer_steps(self: Self) -> Box<[LexerStep]>;
@@ -23,15 +24,15 @@ pub(crate) trait IdProvider {
 pub(crate) struct IdProviderState(Vec<LexerStep>);
 
 impl IdProvider for IdProviderState {
-	fn get_next_id(self: &Self) -> usize {
-		self.0.len()
+	fn get_next_id(self: &Self) -> Id {
+		Id::new(self.0.len())
 	}
 
 	fn get_lexer_step_mut(
 		self: &mut Self,
-		id: usize,
+		id: Id,
 	) -> &mut LexerStep {
-		let follow_pos: &mut LexerStep = unsafe { self.0.get_unchecked_mut(id) };
+		let follow_pos: &mut LexerStep = unsafe { self.0.get_unchecked_mut(id.0) };
 		follow_pos
 	}
 

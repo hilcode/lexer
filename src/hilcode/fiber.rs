@@ -1,5 +1,6 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::TokenFound;
+use crate::hilcode::id::Id;
 use crate::hilcode::lexer_step::LexerStep;
 use crate::hilcode::token_definition::TokenDefinition;
 use ::imstr::ImString;
@@ -7,16 +8,16 @@ use ::std::collections::BTreeSet;
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct Fiber {
-	position: usize,
+	id: Id,
 	offset: usize,
 }
 
 impl Fiber {
 	pub(crate) fn new(
-		position: usize,
+		id: Id,
 		offset: usize,
 	) -> Fiber {
-		Fiber { position, offset }
+		Fiber { id, offset }
 	}
 
 	pub(crate) fn run<TOKEN>(
@@ -28,7 +29,7 @@ impl Fiber {
 	) where
 		TOKEN: TokenDefinition,
 	{
-		let lexer_step: &LexerStep = lexer.get_step(self.position);
+		let lexer_step: &LexerStep = lexer.get_step(self.id);
 		match lexer_step.matches(&source.slice(self.offset..)) {
 			Some(matched_byte_count) => {
 				let new_offset: usize = self.offset + matched_byte_count;
@@ -36,8 +37,8 @@ impl Fiber {
 					let token: TOKEN = token_builder(&source.slice(0..new_offset));
 					Fiber::update_token_found(token_found, token, new_offset);
 				}
-				lexer_step.next().for_each(|next_position: usize| {
-					let fiber: Fiber = Fiber::new(next_position, new_offset);
+				lexer_step.next().for_each(|next_id: Id| {
+					let fiber: Fiber = Fiber::new(next_id, new_offset);
 					fibers.insert(fiber);
 				});
 			}
@@ -80,7 +81,7 @@ impl Fiber {
 #[cfg(test)]
 #[derive(Default)]
 pub(crate) struct FiberBuilder {
-	position: usize,
+	id: Id,
 	offset: usize,
 }
 
@@ -88,14 +89,14 @@ pub(crate) struct FiberBuilder {
 #[coverage(off)]
 impl FiberBuilder {
 	pub(crate) fn build(self: Self) -> Fiber {
-		Fiber::new(self.position, self.offset)
+		Fiber::new(self.id, self.offset)
 	}
 
-	pub(crate) fn position(
+	pub(crate) fn id(
 		mut self: Self,
-		position: usize,
+		id: usize,
 	) -> Self {
-		self.position = position;
+		self.id = Id::new(id);
 		self
 	}
 

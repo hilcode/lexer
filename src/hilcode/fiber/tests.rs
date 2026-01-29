@@ -1,13 +1,14 @@
 use crate::hilcode::dummy_token::DummyToken;
 use crate::hilcode::fiber::Fiber;
+use crate::hilcode::id::Id;
 use ::proptest::prelude::Just;
 use ::proptest::prelude::Strategy;
 use ::proptest::prop_oneof;
 use ::proptest::proptest;
 use ::std::cmp::Ordering;
 
-fn gen_position() -> impl Strategy<Value = usize> {
-	prop_oneof![Just(0), 1..9usize, 10..100usize, 100..1000usize,]
+fn gen_id() -> impl Strategy<Value = Id> {
+	Strategy::prop_map(prop_oneof![Just(0), 1..9usize, 10..100usize, 100..1000usize,], Id::new)
 }
 
 fn gen_offset() -> impl Strategy<Value = usize> {
@@ -15,8 +16,8 @@ fn gen_offset() -> impl Strategy<Value = usize> {
 }
 
 fn gen_fiber() -> impl Strategy<Value = Fiber> {
-	Strategy::prop_map((gen_position(), gen_offset()), move |(position, offset)| -> Fiber {
-		return Fiber::new(position, offset);
+	Strategy::prop_map((gen_id(), gen_offset()), move |(id, offset)| -> Fiber {
+		return Fiber::new(id, offset);
 	})
 }
 
@@ -157,7 +158,7 @@ mod run {
 		fiber.run(token_found, active_fibers, source, lexer);
 		assert_eq!(test_data.active_fibers.len(), 2);
 		assert!(test_data.active_fibers.contains(&Fiber::_builder().offset(1).build()));
-		assert!(test_data.active_fibers.contains(&Fiber::_builder().position(5).offset(1).build()));
+		assert!(test_data.active_fibers.contains(&Fiber::_builder().id(5).offset(1).build()));
 		assert_eq!(test_data.token_found, Some(TokenFound::new(DummyToken::Asterisk("*".into()), 1)));
 	}
 
@@ -206,9 +207,9 @@ mod run {
 		assert_eq!(test_data.active_fibers.len(), 3);
 		let expected_fiber: Fiber = Fiber::_builder().offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
-		let expected_fiber: Fiber = Fiber::_builder().position(100).offset(1).build();
+		let expected_fiber: Fiber = Fiber::_builder().id(100).offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
-		let expected_fiber: Fiber = Fiber::_builder().position(20).offset(1).build();
+		let expected_fiber: Fiber = Fiber::_builder().id(20).offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
 		assert_eq!(test_data.token_found, Some(TokenFound::new(DummyToken::Best("...".into()), 0)));
 	}

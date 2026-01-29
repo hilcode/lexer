@@ -50,8 +50,8 @@ mod step {
 		let active_fibers: BTreeSet<Fiber> = test_data.active_fibers;
 		let fibers: BTreeSet<Fiber> = lexer.step(source, token_found, active_fibers);
 		assert_eq!(fibers.len(), 2);
-		assert!(fibers.contains(&Fiber::_builder().position(0).offset(1).build()));
-		assert!(fibers.contains(&Fiber::_builder().position(1).offset(1).build()));
+		assert!(fibers.contains(&Fiber::_builder().id(0).offset(1).build()));
+		assert!(fibers.contains(&Fiber::_builder().id(1).offset(1).build()));
 	}
 }
 
