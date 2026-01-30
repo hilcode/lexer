@@ -27,12 +27,12 @@ pub(crate) enum DummyTokenType {
 pub(crate) fn to_asterisk(
 	start_offset: AbsOffset,
 	text: &ImString,
-) -> DummyToken {
-	DummyToken {
+) -> Result<DummyToken, String> {
+	Result::Ok(DummyToken {
 		start_offset,
 		text: text.clone(),
 		token_type: DummyTokenType::Asterisk,
-	}
+	})
 }
 
 #[cfg(test)]
@@ -40,12 +40,12 @@ pub(crate) fn to_asterisk(
 pub(crate) fn to_default(
 	start_offset: AbsOffset,
 	text: &ImString,
-) -> DummyToken {
-	DummyToken {
+) -> Result<DummyToken, String> {
+	Result::Ok(DummyToken {
 		start_offset,
 		text: text.clone(),
 		token_type: DummyTokenType::Default,
-	}
+	})
 }
 
 #[cfg(test)]
@@ -53,12 +53,22 @@ pub(crate) fn to_default(
 pub(crate) fn to_best(
 	start_offset: AbsOffset,
 	text: &ImString,
-) -> DummyToken {
-	DummyToken {
+) -> Result<DummyToken, String> {
+	Result::Ok(DummyToken {
 		start_offset,
 		text: text.clone(),
 		token_type: DummyTokenType::Best,
-	}
+	})
+}
+
+#[cfg(test)]
+#[coverage(off)]
+pub(crate) fn to_failure(
+	start_offset: AbsOffset,
+	text: &ImString,
+) -> Result<DummyToken, String> {
+	let message: String = format_args!("{} | {} : Oops!", &start_offset, text).to_string();
+	Result::Err(message.into())
 }
 
 #[cfg(test)]

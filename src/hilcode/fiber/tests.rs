@@ -57,8 +57,10 @@ mod run {
 	use crate::hilcode::dummy_token::to_asterisk;
 	use crate::hilcode::dummy_token::to_best;
 	use crate::hilcode::dummy_token::to_default;
+	use crate::hilcode::dummy_token::to_failure;
 	use crate::hilcode::fiber::Fiber;
 	use crate::hilcode::fiber::tests::DummyToken;
+	use crate::hilcode::lexer_error::TokenCreationFailure;
 	use crate::hilcode::offset::AbsOffset;
 	use crate::hilcode::offset::RelOffset;
 	use crate::hilcode::test_data::TestData;
@@ -79,9 +81,9 @@ mod run {
 		let source: &ImString = &"*".into();
 		let start_offset: AbsOffset = AbsOffset::new(10);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 0);
-		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into());
+		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into()).unwrap();
 		let token_found: TokenFound<DummyToken> = TokenFound::new(asterisk, RelOffset::ONE);
 		assert_eq!(test_data.token_found, Some(token_found));
 	}
@@ -91,7 +93,7 @@ mod run {
 	 */
 	#[test]
 	fn test_02() {
-		let best: DummyToken = to_best(AbsOffset::new(5), &"...".into());
+		let best: DummyToken = to_best(AbsOffset::new(5), &"...".into()).unwrap();
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.token_found(TokenFound::new(best.clone(), RelOffset::ZERO))
@@ -102,7 +104,7 @@ mod run {
 		let source: &ImString = &"*".into();
 		let start_offset: AbsOffset = AbsOffset::new(20);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, Some(TokenFound::new(best, RelOffset::ZERO)));
 	}
@@ -124,9 +126,9 @@ mod run {
 		let source: &ImString = &"*".into();
 		let start_offset: AbsOffset = AbsOffset::new(30);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 0);
-		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into());
+		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into()).unwrap();
 		assert_eq!(test_data.token_found, Some(TokenFound::new(asterisk, RelOffset::ONE)));
 	}
 
@@ -135,7 +137,7 @@ mod run {
 	 */
 	#[test]
 	fn test_04() {
-		let default: DummyToken = to_default(AbsOffset::new(5), &"Default token".into());
+		let default: DummyToken = to_default(AbsOffset::new(5), &"Default token".into()).unwrap();
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_asterisk).build())
 			.fiber(Fiber::default())
@@ -147,7 +149,7 @@ mod run {
 		let source: &ImString = &"...".into();
 		let start_offset: AbsOffset = AbsOffset::new(40);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, Some(TokenFound::new(default, RelOffset::ZERO)));
 	}
@@ -169,11 +171,11 @@ mod run {
 		let source: &ImString = &"**".into();
 		let start_offset: AbsOffset = AbsOffset::new(50);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 2);
 		assert!(test_data.active_fibers.contains(&Fiber::_builder().offset(1).build()));
 		assert!(test_data.active_fibers.contains(&Fiber::_builder().id(5).offset(1).build()));
-		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into());
+		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into()).unwrap();
 		assert_eq!(test_data.token_found, Some(TokenFound::new(asterisk, RelOffset::ONE)));
 	}
 
@@ -184,7 +186,7 @@ mod run {
 	 */
 	#[test]
 	fn test_06() {
-		let default: DummyToken = to_default(AbsOffset::new(5), &"Default token".into());
+		let default: DummyToken = to_default(AbsOffset::new(5), &"Default token".into()).unwrap();
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[0], "*", to_asterisk).build())
 			.fiber(Fiber::default())
@@ -196,11 +198,11 @@ mod run {
 		let source: &ImString = &"**".into();
 		let start_offset: AbsOffset = AbsOffset::new(60);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 1);
 		let expected_fiber: Fiber = Fiber::_builder().offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
-		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into());
+		let asterisk: DummyToken = to_asterisk(start_offset, &"*".into()).unwrap();
 		assert_eq!(test_data.token_found, Some(TokenFound::new(asterisk, RelOffset::ONE)));
 	}
 
@@ -211,7 +213,7 @@ mod run {
 	 */
 	#[test]
 	fn test_07() {
-		let best: DummyToken = to_best(AbsOffset::new(5), &"...".into());
+		let best: DummyToken = to_best(AbsOffset::new(5), &"...".into()).unwrap();
 		let mut test_data: TestData<DummyToken> = TestData::_builder()
 			.lexer(Lexer::_builder().lexer_step_success(&[0, 100, 20], "*", to_asterisk).build())
 			.fiber(Fiber::default())
@@ -223,7 +225,7 @@ mod run {
 		let source: &ImString = &"**".into();
 		let start_offset: AbsOffset = AbsOffset::new(70);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 3);
 		let expected_fiber: Fiber = Fiber::_builder().offset(1).build();
 		assert!(test_data.active_fibers.contains(&expected_fiber));
@@ -246,8 +248,30 @@ mod run {
 		let source: &ImString = &"*".into();
 		let start_offset: AbsOffset = AbsOffset::new(80);
 		let lexer: &Lexer<DummyToken> = &test_data.lexer;
-		fiber.run(token_found, active_fibers, source, start_offset, lexer);
+		fiber.run(token_found, active_fibers, source, start_offset, lexer).unwrap();
 		assert_eq!(test_data.active_fibers.len(), 0);
 		assert_eq!(test_data.token_found, None);
+	}
+
+	#[test]
+	fn test_09() {
+		let mut test_data: TestData<DummyToken> = TestData::_builder()
+			.lexer(Lexer::_builder().lexer_step_success(&[], "*", to_failure).build())
+			.build();
+		let fiber: Fiber = test_data.fiber;
+		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
+		let active_fibers: &mut BTreeSet<Fiber> = &mut test_data.active_fibers;
+		let source: &ImString = &"*".into();
+		let start_offset: AbsOffset = AbsOffset::new(90);
+		let lexer: &Lexer<DummyToken> = &test_data.lexer;
+		let token_creation_failure: TokenCreationFailure =
+			fiber.run(token_found, active_fibers, source, start_offset, lexer).err().unwrap();
+		assert_eq!(test_data.active_fibers.len(), 0);
+		let expected: TokenCreationFailure = TokenCreationFailure {
+			offset_into_source: start_offset,
+			invalid_text: "*".into(),
+			description: "90 | * : Oops!".into(),
+		};
+		assert_eq!(token_creation_failure, expected);
 	}
 }

@@ -4,6 +4,7 @@ pub(crate) mod id;
 pub(crate) mod id_flag;
 pub(crate) mod id_provider;
 pub(crate) mod lexer_builder;
+pub mod lexer_error;
 pub mod lexer_it;
 pub(crate) mod lexer_step;
 pub mod node;
@@ -19,6 +20,7 @@ pub(crate) mod token_id;
 use crate::hilcode::fiber::Fiber;
 use crate::hilcode::id::Id;
 use crate::hilcode::lexer_builder::LexerBuilderEmpty;
+use crate::hilcode::lexer_error::TokenCreationFailure;
 use crate::hilcode::lexer_it::LexerIt;
 use crate::hilcode::lexer_step::LexerStep;
 use crate::hilcode::offset::AbsOffset;
@@ -93,12 +95,12 @@ where
 		start_offset: AbsOffset,
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		active_fibers: BTreeSet<Fiber>,
-	) -> BTreeSet<Fiber> {
+	) -> Result<BTreeSet<Fiber>, TokenCreationFailure> {
 		let mut fibers: BTreeSet<Fiber> = BTreeSet::new();
-		active_fibers.iter().for_each(|active_fiber: &Fiber| {
-			active_fiber.run(token_found, &mut fibers, source, start_offset, self);
-		});
-		fibers
+		for active_fiber in active_fibers {
+			active_fiber.run(token_found, &mut fibers, source, start_offset, self)?;
+		}
+		Result::Ok(fibers)
 	}
 }
 

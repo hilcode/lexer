@@ -1,6 +1,7 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::TokenFound;
 use crate::hilcode::id::Id;
+use crate::hilcode::lexer_error::TokenCreationFailure;
 use crate::hilcode::lexer_step::LexerStep;
 use crate::hilcode::offset::AbsOffset;
 use crate::hilcode::offset::Advance;
@@ -30,7 +31,8 @@ impl Fiber {
 		source: &ImString,
 		start_offset: AbsOffset,
 		lexer: &Lexer<TOKEN>,
-	) where
+	) -> Result<(), TokenCreationFailure>
+	where
 		TOKEN: TokenDefinition,
 	{
 		let lexer_step: &LexerStep = lexer.get_step(self.id);
@@ -38,8 +40,15 @@ impl Fiber {
 			Some(matched_byte_count) => {
 				let new_offset: RelOffset = self.offset.advance(matched_byte_count);
 				if let Some(token_builder) = lexer_step.get_token_builder(lexer) {
-					let token: TOKEN = token_builder(start_offset, &source.slice(new_offset.to_range_up_to()));
-					Fiber::update_token_found(token_found, token, new_offset);
+					match token_builder(start_offset, &source.slice(new_offset.to_range_up_to())) {
+						Result::Ok(token) => {
+							Fiber::update_token_found(token_found, token, new_offset);
+						}
+
+						Result::Err(message) => {
+							return Result::Err(Fiber::error(message, source, start_offset));
+						}
+					}
 				}
 				lexer_step.next().for_each(|next_id: Id| {
 					let fiber: Fiber = Fiber::new(next_id, new_offset);
@@ -51,6 +60,7 @@ impl Fiber {
 				// Do nothing
 			}
 		}
+		Result::Ok(())
 	}
 
 	fn update_token_found<TOKEN>(
@@ -71,6 +81,20 @@ impl Fiber {
 					token_found.replace(TokenFound::new(token, new_offset));
 				}
 			}
+		}
+	}
+
+	fn error(
+		message: String,
+		source: &ImString,
+		start_offset: AbsOffset,
+	) -> TokenCreationFailure {
+		let first_char: char = source.chars().next().unwrap();
+		let skipped_text: ImString = ImString::from(first_char);
+		TokenCreationFailure {
+			offset_into_source: start_offset,
+			invalid_text: skipped_text,
+			description: message,
 		}
 	}
 }

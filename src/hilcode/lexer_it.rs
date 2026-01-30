@@ -1,6 +1,8 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::fiber::Fiber;
 use crate::hilcode::id::Id;
+use crate::hilcode::lexer_error::LexerError;
+use crate::hilcode::lexer_error::TokenCreationFailure;
 use crate::hilcode::offset::AbsOffset;
 use crate::hilcode::offset::Advance;
 use crate::hilcode::offset::RelOffset;
@@ -40,7 +42,7 @@ where
 		self: &Self,
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		active_fibers: BTreeSet<Fiber>,
-	) -> BTreeSet<Fiber> {
+	) -> Result<BTreeSet<Fiber>, TokenCreationFailure> {
 		self.lexer.step(&self.source, self.offset, token_found, active_fibers)
 	}
 
@@ -69,7 +71,7 @@ impl<'lexer, TOKEN> Iterator for LexerIt<'lexer, TOKEN>
 where
 	TOKEN: TokenDefinition<This = TOKEN>,
 {
-	type Item = TOKEN;
+	type Item = Result<TOKEN, LexerError>;
 
 	fn next(self: &mut Self) -> Option<Self::Item> {
 		if self.end_of_source() {
@@ -82,33 +84,39 @@ where
 			active_fibers.insert(fiber);
 		});
 		loop {
-			active_fibers = self.step(&mut maybe_token_found, active_fibers);
-			if active_fibers.is_empty() {
-				break;
+			match self.step(&mut maybe_token_found, active_fibers) {
+				Result::Ok(new_active_fibers) => {
+					if new_active_fibers.is_empty() {
+						break;
+					}
+					active_fibers = new_active_fibers;
+				}
+
+				Result::Err(token_creation_failure) => {
+					let lexer_error: LexerError = token_creation_failure.clone().into();
+					self.advance_source(token_creation_failure.invalid_text.len());
+					return Some(Result::Err(lexer_error));
+				}
 			}
 		}
 		match maybe_token_found {
 			Some(token_found) => {
 				self.advance(token_found.offset());
-				Some(token_found.token())
+				Some(Result::Ok(token_found.token()))
 			}
 
 			None => {
-				let message: ImString = "No valid token found".into();
 				let first_char: char = self.source.chars().next().unwrap();
 				let skipped_text: ImString = ImString::from(first_char);
+				let offset_into_source: AbsOffset = self.offset;
 				let invalid_text: ImString = skipped_text.clone();
-				let error_token: Self::Item = Self::Item::error(message, self.offset, &invalid_text);
-				match self.source.chars().nth(1) {
-					Some(next_char) => {
-						self.advance_source(next_char.len_utf8());
-					}
-
-					None => {
-						self.advance_source(1);
-					}
-				}
-				Some(error_token)
+				let lexer_error: LexerError = LexerError::NoValidTokenFound {
+					offset_into_source,
+					invalid_text,
+					description: "No valid token found".into(),
+				};
+				self.advance_source(skipped_text.len());
+				Some(Result::Err(lexer_error))
 			}
 		}
 	}
