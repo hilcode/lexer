@@ -1,6 +1,7 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::fiber::Fiber;
 use crate::hilcode::id::Id;
+use crate::hilcode::offset::RelOffset;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
 use crate::hilcode::token_definition::TokenDefinition;
@@ -43,6 +44,13 @@ where
 		self.source.is_empty()
 	}
 
+	pub(crate) fn advance(
+		self: &mut Self,
+		offset: RelOffset,
+	) {
+		self.source = self.source.slice(offset.to_range_from());
+	}
+
 	pub(crate) fn advance_source(
 		self: &mut Self,
 		byte_count: usize,
@@ -64,7 +72,7 @@ where
 		let mut maybe_token_found: Option<TokenFound<TOKEN>> = None;
 		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
 		self.start_ids().for_each(|start_id: Id| {
-			let fiber: Fiber = Fiber::new(start_id, 0);
+			let fiber: Fiber = Fiber::new(start_id, RelOffset::ZERO);
 			active_fibers.insert(fiber);
 		});
 		loop {
@@ -75,7 +83,7 @@ where
 		}
 		match maybe_token_found {
 			Some(token_found) => {
-				self.advance_source(token_found.offset());
+				self.advance(token_found.offset());
 				Some(token_found.token())
 			}
 

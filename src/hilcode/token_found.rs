@@ -1,7 +1,9 @@
+use crate::hilcode::offset::RelOffset;
+
 #[derive(Debug, PartialEq)]
 pub(crate) struct TokenFound<TOKEN> {
 	token: TOKEN,
-	offset: usize,
+	offset: RelOffset,
 }
 
 impl<TOKEN> TokenFound<TOKEN>
@@ -10,7 +12,7 @@ where
 {
 	pub(crate) fn new(
 		token: TOKEN,
-		offset: usize,
+		offset: RelOffset,
 	) -> TokenFound<TOKEN> {
 		TokenFound { token, offset }
 	}
@@ -19,7 +21,7 @@ where
 		self.token.clone()
 	}
 
-	pub(crate) fn offset(self: &Self) -> usize {
+	pub(crate) fn offset(self: &Self) -> RelOffset {
 		self.offset
 	}
 }

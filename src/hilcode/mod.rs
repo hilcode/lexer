@@ -8,6 +8,7 @@ pub mod lexer_it;
 pub(crate) mod lexer_step;
 pub mod node;
 pub(crate) mod node_type;
+pub(crate) mod offset;
 pub(crate) mod positions;
 pub(crate) mod test_data;
 pub(crate) mod token_builder;
