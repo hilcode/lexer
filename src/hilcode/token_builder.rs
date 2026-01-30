@@ -1,3 +1,4 @@
+use crate::hilcode::offset::AbsOffset;
 use ::imstr::ImString;
 
-pub(crate) type TokenBuilder<TOKEN> = fn(&ImString) -> TOKEN;
+pub(crate) type TokenBuilder<TOKEN> = fn(AbsOffset, &ImString) -> TOKEN;

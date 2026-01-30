@@ -1,3 +1,6 @@
+use ::std::fmt::Display;
+use ::std::fmt::Formatter;
+use ::std::fmt::Result;
 use ::std::ops::Range;
 use ::std::ops::RangeFrom;
 
@@ -34,6 +37,50 @@ impl RelOffset {
 
 #[cfg(test)]
 impl RelOffset {
+	pub(crate) const ONE: Self = Self(1);
+
+	pub fn new(value: usize) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct AbsOffset(usize);
+
+impl Advance<usize> for AbsOffset {
+	fn advance(
+		self: &Self,
+		delta: usize,
+	) -> Self {
+		Self(self.0 + delta)
+	}
+}
+
+impl Advance<RelOffset> for AbsOffset {
+	fn advance(
+		self: &Self,
+		delta: RelOffset,
+	) -> Self {
+		Self(self.0 + delta.0)
+	}
+}
+
+#[coverage(off)]
+impl Display for AbsOffset {
+	fn fmt(
+		&self,
+		formatter: &mut Formatter<'_>,
+	) -> Result {
+		write!(formatter, "{}", self.0)
+	}
+}
+
+impl AbsOffset {
+	pub(crate) const ZERO: Self = Self(0);
+}
+
+#[cfg(test)]
+impl AbsOffset {
 	pub(crate) const ONE: Self = Self(1);
 
 	pub fn new(value: usize) -> Self {

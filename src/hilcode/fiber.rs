@@ -2,6 +2,7 @@ use crate::hilcode::Lexer;
 use crate::hilcode::TokenFound;
 use crate::hilcode::id::Id;
 use crate::hilcode::lexer_step::LexerStep;
+use crate::hilcode::offset::AbsOffset;
 use crate::hilcode::offset::Advance;
 use crate::hilcode::offset::RelOffset;
 use crate::hilcode::token_definition::TokenDefinition;
@@ -27,6 +28,7 @@ impl Fiber {
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		fibers: &mut BTreeSet<Fiber>,
 		source: &ImString,
+		start_offset: AbsOffset,
 		lexer: &Lexer<TOKEN>,
 	) where
 		TOKEN: TokenDefinition,
@@ -36,7 +38,7 @@ impl Fiber {
 			Some(matched_byte_count) => {
 				let new_offset: RelOffset = self.offset.advance(matched_byte_count);
 				if let Some(token_builder) = lexer_step.get_token_builder(lexer) {
-					let token: TOKEN = token_builder(&source.slice(new_offset.to_range_up_to()));
+					let token: TOKEN = token_builder(start_offset, &source.slice(new_offset.to_range_up_to()));
 					Fiber::update_token_found(token_found, token, new_offset);
 				}
 				lexer_step.next().for_each(|next_id: Id| {

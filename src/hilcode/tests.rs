@@ -7,6 +7,7 @@ mod step {
 	use crate::hilcode::dummy_token::to_asterisk;
 	use crate::hilcode::dummy_token::to_default;
 	use crate::hilcode::fiber::Fiber;
+	use crate::hilcode::offset::AbsOffset;
 	use crate::hilcode::test_data::TestData;
 	use crate::hilcode::token_found::TokenFound;
 	use ::imstr::ImString;
@@ -23,9 +24,10 @@ mod step {
 			.build();
 		let lexer: Lexer<DummyToken> = test_data.lexer;
 		let source: &ImString = &"*".into();
+		let start_offset: AbsOffset = AbsOffset::new(2);
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
 		let active_fibers: BTreeSet<Fiber> = test_data.active_fibers;
-		let fibers: BTreeSet<Fiber> = lexer.step(source, token_found, active_fibers);
+		let fibers: BTreeSet<Fiber> = lexer.step(source, start_offset, token_found, active_fibers);
 		assert_eq!(fibers.len(), 1);
 		assert!(fibers.contains(&Fiber::_builder().offset(1).build()));
 	}
@@ -46,9 +48,10 @@ mod step {
 			.build();
 		let lexer: Lexer<DummyToken> = test_data.lexer;
 		let source: &ImString = &"*".into();
+		let start_offset: AbsOffset = AbsOffset::new(2);
 		let token_found: &mut Option<TokenFound<DummyToken>> = &mut test_data.token_found;
 		let active_fibers: BTreeSet<Fiber> = test_data.active_fibers;
-		let fibers: BTreeSet<Fiber> = lexer.step(source, token_found, active_fibers);
+		let fibers: BTreeSet<Fiber> = lexer.step(source, start_offset, token_found, active_fibers);
 		assert_eq!(fibers.len(), 2);
 		assert!(fibers.contains(&Fiber::_builder().id(0).offset(1).build()));
 		assert!(fibers.contains(&Fiber::_builder().id(1).offset(1).build()));
@@ -62,7 +65,9 @@ mod tokenize {
 	use crate::hilcode::dummy_token::DummyToken;
 	use crate::hilcode::dummy_token::to_asterisk;
 	use crate::hilcode::dummy_token::to_default;
+	use crate::hilcode::offset::AbsOffset;
 	use crate::hilcode::test_data::TestData;
+	use crate::hilcode::token_definition::TokenDefinition;
 
 	#[test]
 	fn test_01() {
@@ -70,7 +75,7 @@ mod tokenize {
 			.lexer(Lexer::_builder().start_ids(&[0]).lexer_step_success(&[], "*", to_asterisk).build())
 			.build();
 		let mut token_it: LexerIt<DummyToken> = test_data.lexer.tokenize("?");
-		let error: DummyToken = DummyToken::Error("No valid token found".into());
+		let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"?".into());
 		assert_eq!(token_it.next(), Some(error));
 		assert_eq!(token_it.next(), None);
 	}
@@ -81,7 +86,7 @@ mod tokenize {
 			.lexer(Lexer::_builder().start_ids(&[0]).lexer_step_success(&[], "*", to_asterisk).build())
 			.build();
 		let mut token_it: LexerIt<DummyToken> = test_data.lexer.tokenize("*");
-		let asterisk: DummyToken = DummyToken::Asterisk("*".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"*".into());
 		assert_eq!(token_it.next(), Some(asterisk));
 		assert_eq!(token_it.next(), None);
 	}
@@ -92,9 +97,9 @@ mod tokenize {
 			.lexer(Lexer::_builder().start_ids(&[0]).lexer_step_success(&[], "*", to_asterisk).build())
 			.build();
 		let mut token_it: LexerIt<DummyToken> = test_data.lexer.tokenize("**");
-		let asterisk: DummyToken = DummyToken::Asterisk("*".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"*".into());
 		assert_eq!(token_it.next(), Some(asterisk));
-		let asterisk: DummyToken = DummyToken::Asterisk("*".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::ONE, &"*".into());
 		assert_eq!(token_it.next(), Some(asterisk));
 		assert_eq!(token_it.next(), None);
 	}
@@ -111,13 +116,13 @@ mod tokenize {
 			)
 			.build();
 		let mut token_it: LexerIt<DummyToken> = test_data.lexer.tokenize("*?*?");
-		let asterisk: DummyToken = DummyToken::Asterisk("*".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"*".into());
 		assert_eq!(token_it.next(), Some(asterisk));
-		let default: DummyToken = DummyToken::Default("?".into());
+		let default: DummyToken = to_default(AbsOffset::ONE, &"?".into());
 		assert_eq!(token_it.next(), Some(default));
-		let asterisk: DummyToken = DummyToken::Asterisk("*".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::new(2), &"*".into());
 		assert_eq!(token_it.next(), Some(asterisk));
-		let default: DummyToken = DummyToken::Default("?".into());
+		let default: DummyToken = to_default(AbsOffset::new(3), &"?".into());
 		assert_eq!(token_it.next(), Some(default));
 		assert_eq!(token_it.next(), None);
 	}
@@ -134,7 +139,7 @@ mod tokenize {
 			)
 			.build();
 		let mut token_it: LexerIt<DummyToken> = test_data.lexer.tokenize("ab");
-		let asterisk: DummyToken = DummyToken::Asterisk("ab".into());
+		let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"ab".into());
 		assert_eq!(token_it.next(), Some(asterisk));
 		assert_eq!(token_it.next(), None);
 	}
@@ -176,12 +181,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("ABC");
-			let asterisk: DummyToken = DummyToken::Asterisk("ABC".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"ABC".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -190,9 +197,9 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AB");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"A".into());
 			assert_eq!(token_it.next(), Some(error));
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ONE, &"B".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -209,14 +216,16 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AB");
-			let asterisk: DummyToken = DummyToken::Asterisk("A".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"A".into());
 			assert_eq!(token_it.next(), Some(asterisk));
-			let asterisk: DummyToken = DummyToken::Asterisk("B".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ONE, &"B".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -225,7 +234,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("C");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"C".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -245,14 +254,16 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AaAb");
-			let asterisk: DummyToken = DummyToken::Asterisk("Aa".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"Aa".into());
 			assert_eq!(token_it.next(), Some(asterisk));
-			let asterisk: DummyToken = DummyToken::Asterisk("Ab".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::new(2), &"Ab".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -261,7 +272,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("C");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"C".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -281,12 +292,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("ab");
-			let asterisk: DummyToken = DummyToken::Asterisk("ab".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"ab".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -295,7 +308,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("a");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"a".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -312,12 +325,13 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
 
 		#[test]
 		fn success_0() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("A");
-			let asterisk: DummyToken = DummyToken::Asterisk("A".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"A".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -326,7 +340,7 @@ mod lexer {
 		fn success_1() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AAbc");
-			let asterisk: DummyToken = DummyToken::Asterisk("AAbc".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"AAbc".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -335,7 +349,7 @@ mod lexer {
 		fn success_2() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AAbcAbc");
-			let asterisk: DummyToken = DummyToken::Asterisk("AAbcAbc".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"AAbcAbc".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -355,12 +369,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success_1() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("Abc");
-			let asterisk: DummyToken = DummyToken::Asterisk("Abc".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"Abc".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -369,7 +385,7 @@ mod lexer {
 		fn success_2() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AbcAbc");
-			let asterisk: DummyToken = DummyToken::Asterisk("AbcAbc".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"AbcAbc".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -378,7 +394,7 @@ mod lexer {
 		fn success_3() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AbcAbcAbc");
-			let asterisk: DummyToken = DummyToken::Asterisk("AbcAbcAbc".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"AbcAbcAbc".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -387,7 +403,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("A");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"A".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -407,12 +423,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success_1() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("abcxyz");
-			let asterisk: DummyToken = DummyToken::Asterisk("abcxyz".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"abcxyz".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -421,7 +439,7 @@ mod lexer {
 		fn success_2() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("abcxyzxyz");
-			let asterisk: DummyToken = DummyToken::Asterisk("abcxyzxyz".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"abcxyzxyz".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -430,7 +448,7 @@ mod lexer {
 		fn success_3() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("abcxyzxyzxyz");
-			let asterisk: DummyToken = DummyToken::Asterisk("abcxyzxyzxyz".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"abcxyzxyzxyz".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -439,7 +457,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("a");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"a".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -459,12 +477,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success_1() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("ab");
-			let asterisk: DummyToken = DummyToken::Asterisk("ab".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"ab".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -473,7 +493,7 @@ mod lexer {
 		fn success_2() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("b");
-			let asterisk: DummyToken = DummyToken::Asterisk("b".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"b".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -482,7 +502,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("a");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"a".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}
@@ -502,12 +522,14 @@ mod lexer {
 		use crate::hilcode::dummy_token::DummyToken;
 		use crate::hilcode::dummy_token::to_asterisk;
 		use crate::hilcode::node;
+		use crate::hilcode::offset::AbsOffset;
+		use crate::hilcode::token_definition::TokenDefinition;
 
 		#[test]
 		fn success_1() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("xab");
-			let asterisk: DummyToken = DummyToken::Asterisk("xab".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"xab".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -516,7 +538,7 @@ mod lexer {
 		fn success_2() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("xb");
-			let asterisk: DummyToken = DummyToken::Asterisk("xb".into());
+			let asterisk: DummyToken = to_asterisk(AbsOffset::ZERO, &"xb".into());
 			assert_eq!(token_it.next(), Some(asterisk));
 			assert_eq!(token_it.next(), None);
 		}
@@ -525,7 +547,7 @@ mod lexer {
 		fn failure() {
 			let lexer: Lexer<DummyToken> = new_lexer();
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("x");
-			let error: DummyToken = DummyToken::Error("No valid token found".into());
+			let error: DummyToken = DummyToken::error("No valid token found", AbsOffset::ZERO, &"x".into());
 			assert_eq!(token_it.next(), Some(error));
 			assert_eq!(token_it.next(), None);
 		}

@@ -21,6 +21,7 @@ use crate::hilcode::id::Id;
 use crate::hilcode::lexer_builder::LexerBuilderEmpty;
 use crate::hilcode::lexer_it::LexerIt;
 use crate::hilcode::lexer_step::LexerStep;
+use crate::hilcode::offset::AbsOffset;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
 use crate::hilcode::token_builder::TokenBuilder;
@@ -89,12 +90,13 @@ where
 	pub(crate) fn step(
 		self: &Self,
 		source: &ImString,
+		start_offset: AbsOffset,
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		active_fibers: BTreeSet<Fiber>,
 	) -> BTreeSet<Fiber> {
 		let mut fibers: BTreeSet<Fiber> = BTreeSet::new();
 		active_fibers.iter().for_each(|active_fiber: &Fiber| {
-			active_fiber.run(token_found, &mut fibers, source, self);
+			active_fiber.run(token_found, &mut fibers, source, start_offset, self);
 		});
 		fibers
 	}

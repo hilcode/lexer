@@ -1,6 +1,8 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::fiber::Fiber;
 use crate::hilcode::id::Id;
+use crate::hilcode::offset::AbsOffset;
+use crate::hilcode::offset::Advance;
 use crate::hilcode::offset::RelOffset;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
@@ -15,6 +17,7 @@ where
 {
 	lexer: &'lexer Lexer<TOKEN>,
 	source: ImString,
+	offset: AbsOffset,
 }
 
 impl<'lexer, TOKEN> LexerIt<'lexer, TOKEN>
@@ -25,7 +28,8 @@ where
 		lexer: &'lexer Lexer<TOKEN>,
 		source: ImString,
 	) -> LexerIt<'lexer, TOKEN> {
-		LexerIt { lexer, source }
+		let offset: AbsOffset = AbsOffset::ZERO;
+		LexerIt { lexer, source, offset }
 	}
 
 	pub(crate) fn start_ids(self: &Self) -> &Positions<StartPos> {
@@ -37,7 +41,7 @@ where
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		active_fibers: BTreeSet<Fiber>,
 	) -> BTreeSet<Fiber> {
-		self.lexer.step(&self.source, token_found, active_fibers)
+		self.lexer.step(&self.source, self.offset, token_found, active_fibers)
 	}
 
 	pub(crate) fn end_of_source(self: &Self) -> bool {
@@ -49,6 +53,7 @@ where
 		offset: RelOffset,
 	) {
 		self.source = self.source.slice(offset.to_range_from());
+		self.offset = self.offset.advance(offset);
 	}
 
 	pub(crate) fn advance_source(
@@ -56,6 +61,7 @@ where
 		byte_count: usize,
 	) {
 		self.source = self.source.slice(byte_count..);
+		self.offset = self.offset.advance(byte_count);
 	}
 }
 
@@ -89,7 +95,10 @@ where
 
 			None => {
 				let message: ImString = "No valid token found".into();
-				let error_token: Self::Item = TOKEN::error(message);
+				let first_char: char = self.source.chars().next().unwrap();
+				let skipped_text: ImString = ImString::from(first_char);
+				let invalid_text: ImString = skipped_text.clone();
+				let error_token: Self::Item = Self::Item::error(message, self.offset, &invalid_text);
 				match self.source.chars().nth(1) {
 					Some(next_char) => {
 						self.advance_source(next_char.len_utf8());
