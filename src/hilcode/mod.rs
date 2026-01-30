@@ -3,6 +3,7 @@ pub(crate) mod fiber;
 pub(crate) mod id_flag;
 pub(crate) mod id_provider;
 pub(crate) mod lexer_builder;
+pub mod lexer_it;
 pub(crate) mod lexer_step;
 pub mod node;
 pub(crate) mod node_type;
@@ -15,6 +16,7 @@ pub(crate) mod token_id;
 
 use crate::hilcode::fiber::Fiber;
 use crate::hilcode::lexer_builder::LexerBuilderEmpty;
+use crate::hilcode::lexer_it::LexerIt;
 use crate::hilcode::lexer_step::LexerStep;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
@@ -43,60 +45,6 @@ where
 			start_ids: Default::default(),
 			lexer_steps: Default::default(),
 			token_builders: Default::default(),
-		}
-	}
-}
-
-pub struct LexerIt<'lexer, TOKEN>
-where
-	TOKEN: TokenDefinition,
-{
-	lexer: &'lexer Lexer<TOKEN>,
-	source: ImString,
-}
-
-impl<'lexer, TOKEN> Iterator for LexerIt<'lexer, TOKEN>
-where
-	TOKEN: TokenDefinition<This = TOKEN>,
-{
-	type Item = TOKEN;
-
-	fn next(self: &mut Self) -> Option<Self::Item> {
-		if self.source.is_empty() {
-			return None;
-		}
-		let mut maybe_token_found: Option<TokenFound<TOKEN>> = None;
-		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
-		self.lexer.start_ids.for_each(|start_id: usize| {
-			let fiber: Fiber = Fiber::new(start_id, 0);
-			active_fibers.insert(fiber);
-		});
-		loop {
-			active_fibers = self.lexer.step(&self.source, &mut maybe_token_found, active_fibers);
-			if active_fibers.is_empty() {
-				break;
-			}
-		}
-		match maybe_token_found {
-			Some(token_found) => {
-				self.source = self.source.slice(token_found.offset()..);
-				Some(token_found.token())
-			}
-
-			None => {
-				let message: ImString = "No valid token found".into();
-				let error_token: Self::Item = Self::Item::error(message);
-				match self.source.chars().nth(1) {
-					Some(next_char) => {
-						self.source = self.source.slice(next_char.len_utf8()..);
-					}
-
-					None => {
-						self.source = self.source.slice(1..);
-					}
-				}
-				Some(error_token)
-			}
 		}
 	}
 }
@@ -132,10 +80,7 @@ where
 		self: &'lexer Self,
 		source: impl Into<ImString>,
 	) -> LexerIt<'lexer, TOKEN> {
-		LexerIt {
-			lexer: self,
-			source: source.into(),
-		}
+		LexerIt::new(self, source.into())
 	}
 
 	pub(crate) fn step(
