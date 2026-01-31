@@ -1,5 +1,7 @@
 use crate::hilcode::Lexer;
 use crate::hilcode::fiber::Fiber;
+use crate::hilcode::positions::Positions;
+use crate::hilcode::positions::StartPos;
 use crate::hilcode::token_definition::TokenDefinition;
 use crate::hilcode::token_found::TokenFound;
 use ::imstr::ImString;
@@ -23,6 +25,29 @@ where
 	) -> LexerIt<'lexer, TOKEN> {
 		LexerIt { lexer, source }
 	}
+
+	pub(crate) fn start_ids(self: &Self) -> &Positions<StartPos> {
+		&self.lexer.start_ids
+	}
+
+	pub(crate) fn step(
+		self: &Self,
+		token_found: &mut Option<TokenFound<TOKEN>>,
+		active_fibers: BTreeSet<Fiber>,
+	) -> BTreeSet<Fiber> {
+		self.lexer.step(&self.source, token_found, active_fibers)
+	}
+
+	pub(crate) fn end_of_source(self: &Self) -> bool {
+		self.source.is_empty()
+	}
+
+	pub(crate) fn advance_source(
+		self: &mut Self,
+		byte_count: usize,
+	) {
+		self.source = self.source.slice(byte_count..);
+	}
 }
 
 impl<'lexer, TOKEN> Iterator for LexerIt<'lexer, TOKEN>
@@ -32,37 +57,37 @@ where
 	type Item = TOKEN;
 
 	fn next(self: &mut Self) -> Option<Self::Item> {
-		if self.source.is_empty() {
+		if self.end_of_source() {
 			return None;
 		}
 		let mut maybe_token_found: Option<TokenFound<TOKEN>> = None;
 		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
-		self.lexer.start_ids.for_each(|start_id: usize| {
+		self.start_ids().for_each(|start_id: usize| {
 			let fiber: Fiber = Fiber::new(start_id, 0);
 			active_fibers.insert(fiber);
 		});
 		loop {
-			active_fibers = self.lexer.step(&self.source, &mut maybe_token_found, active_fibers);
+			active_fibers = self.step(&mut maybe_token_found, active_fibers);
 			if active_fibers.is_empty() {
 				break;
 			}
 		}
 		match maybe_token_found {
 			Some(token_found) => {
-				self.source = self.source.slice(token_found.offset()..);
+				self.advance_source(token_found.offset());
 				Some(token_found.token())
 			}
 
 			None => {
 				let message: ImString = "No valid token found".into();
-				let error_token: Self::Item = Self::Item::error(message);
+				let error_token: Self::Item = TOKEN::error(message);
 				match self.source.chars().nth(1) {
 					Some(next_char) => {
-						self.source = self.source.slice(next_char.len_utf8()..);
+						self.advance_source(next_char.len_utf8());
 					}
 
 					None => {
-						self.source = self.source.slice(1..);
+						self.advance_source(1);
 					}
 				}
 				Some(error_token)
