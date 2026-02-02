@@ -84,6 +84,10 @@ impl TokenDefinition for DummyToken {
 		&self.text
 	}
 
+	fn sentinels() -> &'static [&'static str] {
+		&["\n", " ", "\t", "\r\n"]
+	}
+
 	fn error(
 		message: impl Into<ImString>,
 		start_offset: AbsOffset,

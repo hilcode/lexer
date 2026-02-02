@@ -111,8 +111,7 @@ where
 			}
 
 			None => {
-				let first_char: char = self.source.chars().next().unwrap();
-				let invalid_text: ImString = ImString::from(first_char);
+				let invalid_text: ImString = TOKEN::skip_invalid(&self.source);
 				let invalid_text_size: usize = invalid_text.len();
 				let offset_into_source: AbsOffset = self.offset;
 				let lexer_error: LexerError = LexerError::NoValidTokenFound {

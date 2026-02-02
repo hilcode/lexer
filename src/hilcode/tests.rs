@@ -196,7 +196,10 @@ mod lexer {
 	use crate::hilcode::dummy_token::to_asterisk;
 	use crate::hilcode::dummy_token::to_best;
 	use crate::hilcode::dummy_token::to_default;
+	use crate::hilcode::lexer_error::LexerError;
+	use crate::hilcode::lexer_it::LexerIt;
 	use crate::hilcode::node;
+	use crate::hilcode::offset::AbsOffset;
 
 	#[test]
 	fn nullable_definition() {
@@ -216,6 +219,66 @@ mod lexer {
 				"Token #4 has a nullable definition".to_string()
 			]
 		)
+	}
+
+	#[test]
+	fn failure_1() {
+		let lexer: Lexer<DummyToken> = new_lexer();
+		let mut token_it: LexerIt<DummyToken> = lexer.tokenize("ABDEFG xyz");
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::ZERO,
+			invalid_text: "ABDEFG".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::new(6),
+			invalid_text: " ".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::new(7),
+			invalid_text: "xyz".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		assert_eq!(token_it.next(), None);
+	}
+
+	#[test]
+	fn failure_2() {
+		let lexer: Lexer<DummyToken> = new_lexer();
+		let mut token_it: LexerIt<DummyToken> = lexer.tokenize("ABDEFG\r\nxyz ");
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::ZERO,
+			invalid_text: "ABDEFG".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::new(6),
+			invalid_text: "\r\n".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::new(8),
+			invalid_text: "xyz".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		let lexer_error: LexerError = LexerError::NoValidTokenFound {
+			offset_into_source: AbsOffset::new(11),
+			invalid_text: " ".into(),
+			description: "No valid token found".into(),
+		};
+		assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
+		assert_eq!(token_it.next(), None);
+	}
+
+	fn new_lexer() -> Lexer<DummyToken> {
+		Lexer::builder().new_token(node::text("ABC"), to_asterisk).build().unwrap()
 	}
 
 	mod text {
@@ -243,13 +306,7 @@ mod lexer {
 			let mut token_it: LexerIt<DummyToken> = lexer.tokenize("AB");
 			let lexer_error: LexerError = LexerError::NoValidTokenFound {
 				offset_into_source: AbsOffset::ZERO,
-				invalid_text: "A".into(),
-				description: "No valid token found".into(),
-			};
-			assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
-			let lexer_error: LexerError = LexerError::NoValidTokenFound {
-				offset_into_source: AbsOffset::ONE,
-				invalid_text: "B".into(),
+				invalid_text: "AB".into(),
 				description: "No valid token found".into(),
 			};
 			assert_eq!(token_it.next(), Some(Result::Err(lexer_error)));
