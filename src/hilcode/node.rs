@@ -1,3 +1,4 @@
+use crate::hilcode::id::Id;
 use crate::hilcode::id_flag::HasValidId;
 use crate::hilcode::id_flag::NoId;
 use crate::hilcode::id_provider::IdProvider;
@@ -178,7 +179,7 @@ impl Node<NoId> {
 			}
 
 			NodeType::Terminal { expected, success } => {
-				let id: usize = state.get_next_id();
+				let id: Id = state.get_next_id();
 				let mut first_pos: Positions<FirstPos> = self.first_pos.clone();
 				first_pos.insert(id);
 				let last_pos: Positions<LastPos> = first_pos.to_last_pos();
@@ -303,14 +304,14 @@ pub(crate) fn generate_follow_pos<ID_PROVIDER>(
 		NodeType::Concat { lhs, rhs } => {
 			generate_follow_pos(state, lhs);
 			generate_follow_pos(state, rhs);
-			lhs.last_pos.for_each(|id: usize| {
+			lhs.last_pos.for_each(|id: Id| {
 				update(state, id, &rhs.first_pos);
 			});
 		}
 
 		NodeType::Repeat { repeat } => {
 			generate_follow_pos(state, repeat);
-			repeat.last_pos.for_each(|id: usize| {
+			repeat.last_pos.for_each(|id: Id| {
 				update(state, id, &repeat.first_pos);
 			});
 		}
@@ -319,7 +320,7 @@ pub(crate) fn generate_follow_pos<ID_PROVIDER>(
 
 fn update<ID_PROVIDER>(
 	state: &mut ID_PROVIDER,
-	id: usize,
+	id: Id,
 	first_pos: &Positions<FirstPos>,
 ) where
 	ID_PROVIDER: IdProvider,

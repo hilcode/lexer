@@ -1,5 +1,3 @@
-use ::std::marker::PhantomData;
-
 use crate::hilcode::Lexer;
 use crate::hilcode::id_flag::HasValidId;
 use crate::hilcode::id_flag::NoId;
@@ -14,6 +12,7 @@ use crate::hilcode::positions::StartPos;
 use crate::hilcode::token_builder::TokenBuilder;
 use crate::hilcode::token_definition::TokenDefinition;
 use crate::hilcode::token_id::TokenId;
+use ::std::marker::PhantomData;
 
 pub struct LexerBuilderEmpty<TOKEN>(PhantomData<TOKEN>);
 
