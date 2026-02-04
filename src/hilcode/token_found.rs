@@ -1,4 +1,5 @@
 use crate::hilcode::offset::RelOffset;
+use crate::hilcode::token_definition::TokenDefinition;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TokenFound<TOKEN> {
@@ -8,7 +9,7 @@ pub(crate) struct TokenFound<TOKEN> {
 
 impl<TOKEN> TokenFound<TOKEN>
 where
-	TOKEN: Clone + PartialEq,
+	TOKEN: TokenDefinition,
 {
 	pub(crate) fn new(
 		token: TOKEN,

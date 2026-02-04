@@ -34,11 +34,11 @@ where
 		LexerIt { lexer, source, offset }
 	}
 
-	pub(crate) fn start_ids(self: &Self) -> &Positions<StartPos> {
+	fn start_ids(self: &Self) -> &Positions<StartPos> {
 		&self.lexer.start_ids
 	}
 
-	pub(crate) fn step(
+	fn step(
 		self: &Self,
 		token_found: &mut Option<TokenFound<TOKEN>>,
 		active_fibers: BTreeSet<Fiber>,
@@ -46,11 +46,11 @@ where
 		self.lexer.step(&self.source, self.offset, token_found, active_fibers)
 	}
 
-	pub(crate) fn end_of_source(self: &Self) -> bool {
+	fn end_of_source(self: &Self) -> bool {
 		self.source.is_empty()
 	}
 
-	pub(crate) fn advance(
+	fn advance(
 		self: &mut Self,
 		offset: RelOffset,
 	) {
@@ -58,12 +58,21 @@ where
 		self.offset = self.offset.advance(offset);
 	}
 
-	pub(crate) fn advance_source(
+	fn advance_source(
 		self: &mut Self,
 		byte_count: usize,
 	) {
 		self.source = self.source.slice(byte_count..);
 		self.offset = self.offset.advance(byte_count);
+	}
+
+	fn initialize(self: &Self) -> BTreeSet<Fiber> {
+		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
+		self.start_ids().for_each(|start_id: Id| {
+			let fiber: Fiber = Fiber::new(start_id, RelOffset::ZERO);
+			active_fibers.insert(fiber);
+		});
+		active_fibers
 	}
 }
 
@@ -78,11 +87,7 @@ where
 			return None;
 		}
 		let mut maybe_token_found: Option<TokenFound<TOKEN>> = None;
-		let mut active_fibers: BTreeSet<Fiber> = BTreeSet::new();
-		self.start_ids().for_each(|start_id: Id| {
-			let fiber: Fiber = Fiber::new(start_id, RelOffset::ZERO);
-			active_fibers.insert(fiber);
-		});
+		let mut active_fibers: BTreeSet<Fiber> = self.initialize();
 		loop {
 			match self.step(&mut maybe_token_found, active_fibers) {
 				Result::Ok(new_active_fibers) => {
@@ -107,15 +112,15 @@ where
 
 			None => {
 				let first_char: char = self.source.chars().next().unwrap();
-				let skipped_text: ImString = ImString::from(first_char);
+				let invalid_text: ImString = ImString::from(first_char);
+				let invalid_text_size: usize = invalid_text.len();
 				let offset_into_source: AbsOffset = self.offset;
-				let invalid_text: ImString = skipped_text.clone();
 				let lexer_error: LexerError = LexerError::NoValidTokenFound {
 					offset_into_source,
 					invalid_text,
 					description: "No valid token found".into(),
 				};
-				self.advance_source(skipped_text.len());
+				self.advance_source(invalid_text_size);
 				Some(Result::Err(lexer_error))
 			}
 		}
