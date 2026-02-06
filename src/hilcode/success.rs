@@ -10,6 +10,9 @@ pub(crate) struct Success {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SuccessType {
 	Default,
+	IfFollowedBy,
+	IfNotFollowedBy,
+	Tail,
 }
 
 impl Success {
@@ -22,5 +25,9 @@ impl Success {
 
 	pub(crate) fn token_id(self: &Self) -> TokenId {
 		self.token_id
+	}
+
+	pub(crate) fn success_type(self: &Self) -> SuccessType {
+		self.success_type
 	}
 }

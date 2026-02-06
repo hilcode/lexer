@@ -40,6 +40,76 @@ impl<TOKEN> LexerBuilderEmpty<TOKEN> {
 	}
 }
 
+pub struct NonFinal;
+pub struct Final;
+
+pub struct NewToken<FINAL, TOKEN>
+where
+	TOKEN: TokenDefinition,
+{
+	node: Node<NoId>,
+	new_token_type: NewTokenType,
+	phantom: PhantomData<(FINAL, TOKEN)>,
+}
+
+pub enum NewTokenType {
+	Simple,
+	IfFollowedBy(Node<NoId>),
+	IfNotFollowedBy(Node<NoId>),
+}
+
+impl<TOKEN> NewToken<NonFinal, TOKEN>
+where
+	TOKEN: TokenDefinition,
+{
+	pub fn if_followed_by(
+		self: Self,
+		tail: Node<NoId>,
+	) -> NewToken<Final, TOKEN> {
+		let node: Node<NoId> = self.node;
+		let new_token_type: NewTokenType = NewTokenType::IfFollowedBy(tail);
+		let phantom: PhantomData<(Final, TOKEN)> = PhantomData;
+		NewToken {
+			node,
+			new_token_type,
+			phantom,
+		}
+	}
+
+	pub fn if_not_followed_by(
+		self: Self,
+		tail: Node<NoId>,
+	) -> NewToken<Final, TOKEN> {
+		let node: Node<NoId> = self.node;
+		let new_token_type: NewTokenType = NewTokenType::IfNotFollowedBy(tail);
+		let phantom: PhantomData<(Final, TOKEN)> = PhantomData;
+		NewToken {
+			node,
+			new_token_type,
+			phantom,
+		}
+	}
+
+	pub fn finish(
+		self: Self,
+		_to_token: TokenBuilder<TOKEN>,
+	) {
+		// Nothing
+	}
+}
+
+impl<TOKEN> NewToken<Final, TOKEN>
+where
+	TOKEN: TokenDefinition,
+{
+	pub fn finish(
+		self: Self,
+		_to_token: TokenBuilder<TOKEN>,
+	) {
+		// Nothing
+	}
+}
+
 pub struct LexerBuilder<TOKEN> {
 	root: Node<NoId>,
 	errors: Vec<String>,
