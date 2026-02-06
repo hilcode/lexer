@@ -10,6 +10,7 @@ mod text {
 	use crate::hilcode::positions::LastPos;
 	use crate::hilcode::positions::Positions;
 	use crate::hilcode::positions::StartPos;
+	use crate::hilcode::success::Success;
 	use crate::hilcode::token_id::TokenId;
 
 	#[test]
@@ -34,13 +35,14 @@ mod text {
 	fn with_token() {
 		let root: Node<NoId> = node::text("*");
 		let mut state: IdProviderState = IdProviderState::default();
-		let success: TokenId = TokenId::new(100);
-		let root: Node<NoId> = root.set_success_token_id(success);
+		let token_id: TokenId = TokenId::new(100);
+		let root: Node<NoId> = root.set_success_token_id(token_id);
 		let root: Node<HasValidId> = root.set_id(&mut state);
 		assert_eq!(root.nullable, false);
 		assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0]));
 		assert_eq!(root.last_pos, Positions::<LastPos>::new(&[0]));
 		assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0]));
+		let success: Success = Success::new(token_id);
 		assert_eq!(
 			root.node_type,
 			NodeType::Terminal {
@@ -63,6 +65,7 @@ mod one_of {
 	use crate::hilcode::positions::LastPos;
 	use crate::hilcode::positions::Positions;
 	use crate::hilcode::positions::StartPos;
+	use crate::hilcode::success::Success;
 	use crate::hilcode::token_id::TokenId;
 
 	mod nullable {
@@ -146,26 +149,27 @@ mod one_of {
 		let rhs: Node<NoId> = node::text("B");
 		let root: Node<NoId> = node::one_of(lhs, rhs);
 		let mut state: IdProviderState = IdProviderState::default();
-		let success: TokenId = TokenId::new(100);
-		let root: Node<NoId> = root.set_success_token_id(success);
+		let token_id: TokenId = TokenId::new(100);
+		let root: Node<NoId> = root.set_success_token_id(token_id);
 		let root: Node<HasValidId> = root.set_id(&mut state);
 		assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0, 1]));
 		assert_eq!(root.last_pos, Positions::<LastPos>::new(&[0, 1]));
 		assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0, 1]));
+		let success: Success = Success::new(token_id);
 		match root.node_type {
 			NodeType::OneOf { lhs, rhs } => {
 				assert_eq!(
 					lhs.node_type,
 					NodeType::Terminal {
 						expected: "A".into(),
-						success: Some(success)
+						success: Some(success),
 					}
 				);
 				assert_eq!(
 					rhs.node_type,
 					NodeType::Terminal {
 						expected: "B".into(),
-						success: Some(success)
+						success: Some(success),
 					}
 				);
 			}
@@ -336,6 +340,7 @@ mod concat {
 		use crate::hilcode::positions::LastPos;
 		use crate::hilcode::positions::Positions;
 		use crate::hilcode::positions::StartPos;
+		use crate::hilcode::success::Success;
 		use crate::hilcode::token_id::TokenId;
 
 		#[test]
@@ -344,12 +349,13 @@ mod concat {
 			let rhs: Node<NoId> = node::text("B");
 			let root: Node<NoId> = node::concat(lhs, rhs);
 			let mut state: IdProviderState = IdProviderState::default();
-			let success: TokenId = TokenId::new(100);
-			let root: Node<NoId> = root.set_success_token_id(success);
+			let token_id: TokenId = TokenId::new(100);
+			let root: Node<NoId> = root.set_success_token_id(token_id);
 			let root: Node<HasValidId> = root.set_id(&mut state);
 			assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0]));
 			assert_eq!(root.last_pos, Positions::<LastPos>::new(&[0]));
 			assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0]));
+			let success: Success = Success::new(token_id);
 			match root.node_type {
 				NodeType::Concat { lhs, rhs } => {
 					assert_eq!(lhs.node_type, NodeType::Empty);
@@ -374,12 +380,13 @@ mod concat {
 			let rhs: Node<NoId> = node::empty();
 			let root: Node<NoId> = node::concat(lhs, rhs);
 			let mut state: IdProviderState = IdProviderState::default();
-			let success: TokenId = TokenId::new(100);
-			let root: Node<NoId> = root.set_success_token_id(success);
+			let token_id: TokenId = TokenId::new(100);
+			let root: Node<NoId> = root.set_success_token_id(token_id);
 			let root: Node<HasValidId> = root.set_id(&mut state);
 			assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0]));
 			assert_eq!(root.last_pos, Positions::<LastPos>::new(&[0]));
 			assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0]));
+			let success: Success = Success::new(token_id);
 			match root.node_type {
 				NodeType::Concat { lhs, rhs } => {
 					assert_eq!(
@@ -404,12 +411,13 @@ mod concat {
 			let rhs: Node<NoId> = node::text("B");
 			let root: Node<NoId> = node::concat(lhs, rhs);
 			let mut state: IdProviderState = IdProviderState::default();
-			let success: TokenId = TokenId::new(100);
-			let root: Node<NoId> = root.set_success_token_id(success);
+			let token_id: TokenId = TokenId::new(100);
+			let root: Node<NoId> = root.set_success_token_id(token_id);
 			let root: Node<HasValidId> = root.set_id(&mut state);
 			assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0]));
 			assert_eq!(root.last_pos, Positions::<LastPos>::new(&[1]));
 			assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0]));
+			let success: Success = Success::new(token_id);
 			match root.node_type {
 				NodeType::Concat { lhs, rhs } => {
 					assert_eq!(
@@ -448,6 +456,7 @@ mod repeat {
 	use crate::hilcode::positions::LastPos;
 	use crate::hilcode::positions::Positions;
 	use crate::hilcode::positions::StartPos;
+	use crate::hilcode::success::Success;
 	use crate::hilcode::token_id::TokenId;
 
 	mod nullable {
@@ -506,12 +515,13 @@ mod repeat {
 		let repeat: Node<NoId> = node::text("A");
 		let root: Node<NoId> = node::repeat(repeat);
 		let mut state: IdProviderState = IdProviderState::default();
-		let success: TokenId = TokenId::new(100);
-		let root: Node<NoId> = root.set_success_token_id(success);
+		let token_id: TokenId = TokenId::new(100);
+		let root: Node<NoId> = root.set_success_token_id(token_id);
 		let root: Node<HasValidId> = root.set_id(&mut state);
 		assert_eq!(root.first_pos, Positions::<FirstPos>::new(&[0]));
 		assert_eq!(root.last_pos, Positions::<LastPos>::new(&[0]));
 		assert_eq!(root.get_start_ids(), Positions::<StartPos>::new(&[0]));
+		let success: Success = Success::new(token_id);
 		match root.node_type {
 			NodeType::Repeat { repeat } => {
 				assert_eq!(

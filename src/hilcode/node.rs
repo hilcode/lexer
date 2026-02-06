@@ -10,6 +10,7 @@ use crate::hilcode::positions::FirstPos;
 use crate::hilcode::positions::LastPos;
 use crate::hilcode::positions::Positions;
 use crate::hilcode::positions::StartPos;
+use crate::hilcode::success::Success;
 use crate::hilcode::token_id::TokenId;
 use ::imstr::ImString;
 use ::std::fmt::Debug;
@@ -130,7 +131,7 @@ impl Node<NoId> {
 
 	pub(crate) fn set_success_token_id(
 		self: &Self,
-		success: TokenId,
+		token_id: TokenId,
 	) -> Node<NoId> {
 		match &self.node_type {
 			NodeType::Empty => {
@@ -138,31 +139,32 @@ impl Node<NoId> {
 			}
 
 			NodeType::Terminal { expected, success: _ } => {
+				let success: Success = Success::new(token_id);
 				self.with_node_type(NodeType::new_terminal_with_to_token(expected.clone(), Some(success)))
 			}
 
 			NodeType::Concat { lhs, rhs } => {
 				let lhs: Box<Node<NoId>> = if rhs.nullable() {
-					Box::new(lhs.set_success_token_id(success))
+					Box::new(lhs.set_success_token_id(token_id))
 				} else {
 					lhs.clone()
 				};
-				let rhs: Box<Node<NoId>> = Box::new(rhs.set_success_token_id(success));
+				let rhs: Box<Node<NoId>> = Box::new(rhs.set_success_token_id(token_id));
 				let node_type: NodeType<NoId> = NodeType::Concat { lhs, rhs };
 				self.with_node_type(node_type)
 			}
 
 			NodeType::OneOf { lhs, rhs } => {
 				let node_type: NodeType<NoId> = NodeType::OneOf {
-					lhs: Box::new(lhs.set_success_token_id(success)),
-					rhs: Box::new(rhs.set_success_token_id(success)),
+					lhs: Box::new(lhs.set_success_token_id(token_id)),
+					rhs: Box::new(rhs.set_success_token_id(token_id)),
 				};
 				self.with_node_type(node_type)
 			}
 
 			NodeType::Repeat { repeat } => {
 				let node_type: NodeType<NoId> = NodeType::Repeat {
-					repeat: Box::new(repeat.set_success_token_id(success)),
+					repeat: Box::new(repeat.set_success_token_id(token_id)),
 				};
 				self.with_node_type(node_type)
 			}

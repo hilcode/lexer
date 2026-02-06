@@ -1,6 +1,6 @@
 use crate::hilcode::id::Id;
 use crate::hilcode::lexer_step::LexerStep;
-use crate::hilcode::token_id::TokenId;
+use crate::hilcode::success::Success;
 use ::imstr::ImString;
 
 pub(crate) trait IdProvider {
@@ -16,7 +16,7 @@ pub(crate) trait IdProvider {
 	fn append(
 		self: &mut Self,
 		expected: ImString,
-		success: Option<TokenId>,
+		success: Option<Success>,
 	);
 }
 
@@ -43,7 +43,7 @@ impl IdProvider for IdProviderState {
 	fn append(
 		self: &mut Self,
 		expected: ImString,
-		success: Option<TokenId>,
+		success: Option<Success>,
 	) {
 		self.0.push(LexerStep::new(expected, success));
 	}

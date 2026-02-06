@@ -2,22 +2,22 @@ use crate::hilcode::Lexer;
 use crate::hilcode::positions::FirstPos;
 use crate::hilcode::positions::FollowPos;
 use crate::hilcode::positions::Positions;
+use crate::hilcode::success::Success;
 use crate::hilcode::token_builder::TokenBuilder;
 use crate::hilcode::token_definition::TokenDefinition;
-use crate::hilcode::token_id::TokenId;
 use ::imstr::ImString;
 
 #[derive(Debug)]
 pub(crate) struct LexerStep {
 	next: Positions<FollowPos>,
 	expected: ImString,
-	success: Option<TokenId>,
+	success: Option<Success>,
 }
 
 impl LexerStep {
 	pub(crate) fn new(
 		expected: ImString,
-		success: Option<TokenId>,
+		success: Option<Success>,
 	) -> LexerStep {
 		LexerStep {
 			next: Positions::default(),
@@ -33,8 +33,8 @@ impl LexerStep {
 	where
 		TOKEN: TokenDefinition,
 	{
-		self.success.map(|token_id: TokenId| -> &TokenBuilder<TOKEN> {
-			return token_id.get(&lexer.token_builders).unwrap();
+		self.success.map(|success: Success| -> &TokenBuilder<TOKEN> {
+			return success.token_id().get(&lexer.token_builders).unwrap();
 		})
 	}
 
@@ -66,7 +66,7 @@ impl LexerStep {
 pub(crate) struct LexerStepBuilder {
 	next: Positions<FollowPos>,
 	expected: ImString,
-	success: Option<TokenId>,
+	success: Option<Success>,
 }
 
 #[cfg(test)]
@@ -104,7 +104,7 @@ impl LexerStepBuilder {
 
 	pub(crate) fn success(
 		mut self: Self,
-		success: TokenId,
+		success: Success,
 	) -> Self {
 		self.success = Some(success);
 		self

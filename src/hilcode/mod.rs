@@ -11,6 +11,7 @@ pub mod node;
 pub(crate) mod node_type;
 pub(crate) mod offset;
 pub(crate) mod positions;
+pub(crate) mod success;
 pub(crate) mod test_data;
 pub(crate) mod token_builder;
 pub mod token_definition;
@@ -105,6 +106,8 @@ where
 }
 
 #[cfg(test)]
+use crate::hilcode::success::Success;
+#[cfg(test)]
 use crate::hilcode::token_id::TokenId;
 
 #[cfg(test)]
@@ -161,7 +164,8 @@ where
 		expected: &str,
 		to_token: TokenBuilder<TOKEN>,
 	) -> Self {
-		let success: TokenId = TokenId::new(self.token_builders.len());
+		let token_id: TokenId = TokenId::new(self.token_builders.len());
+		let success: Success = Success::new(token_id);
 		self.token_builders.push(to_token);
 		let lexer_step: LexerStep = LexerStep::_builder().next(next).expected(expected).success(success).build();
 		self.lexer_steps.push(lexer_step);

@@ -1,6 +1,6 @@
 use crate::hilcode::id_flag::NoId;
 use crate::hilcode::node::Node;
-use crate::hilcode::token_id::TokenId;
+use crate::hilcode::success::Success;
 use ::imstr::ImString;
 use ::std::fmt::Debug;
 
@@ -10,7 +10,7 @@ where
 	ID: Debug,
 {
 	Empty,
-	Terminal { expected: ImString, success: Option<TokenId> },
+	Terminal { expected: ImString, success: Option<Success> },
 	Concat { lhs: Box<Node<ID>>, rhs: Box<Node<ID>> },
 	OneOf { lhs: Box<Node<ID>>, rhs: Box<Node<ID>> },
 	Repeat { repeat: Box<Node<ID>> },
@@ -23,7 +23,7 @@ impl NodeType<NoId> {
 
 	pub(crate) fn new_terminal_with_to_token<ID_FLAG>(
 		expected: ImString,
-		success: Option<TokenId>,
+		success: Option<Success>,
 	) -> NodeType<ID_FLAG>
 	where
 		ID_FLAG: Debug,
